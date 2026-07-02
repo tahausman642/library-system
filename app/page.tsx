@@ -125,7 +125,7 @@ export default async function Home({ searchParams }: PageProps) {
               <div key={book.id} className="border rounded-lg p-5 shadow-sm hover:shadow-md transition bg-white flex flex-col justify-between">
 
                 <div className="mb-4">
-                  <a href={`/book?id=${book.id}`} className="hover:underline hover:text-blue-600 transition">
+                  <a href={`/book/${book.id}`} className="hover:underline hover:text-blue-600 transition">
                     <h3 className="text-xl font-bold mb-1 line-clamp-1">{book.title}</h3>
                   </a>
                   <p className="text-gray-600 mb-2">by {book.author}</p>
