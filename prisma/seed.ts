@@ -1,48 +1,32 @@
 // prisma/seed.ts
 import { PrismaClient } from '@prisma/client'
-import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3'
 
-// Initialize the exact same way we did in lib/prisma.ts
-const adapter = new PrismaBetterSqlite3({
-  url: "file:./dev.db"
-})
-const prisma = new PrismaClient({ adapter })
+const prisma = new PrismaClient()
+
 async function main() {
-  console.log('Seeding database with books...')
+  console.log('🌱 Starting database seed...')
 
-  const mockBooks = [
-    { title: "The Pragmatic Programmer", author: "David Thomas", isbn: "978-0135957059", totalCopies: 3 },
-    { title: "Clean Code", author: "Robert C. Martin", isbn: "978-0132350884", totalCopies: 5 },
-    { title: "Dune", author: "Frank Herbert", isbn: "978-0441172719", totalCopies: 2 },
-    { title: "Neuromancer", author: "William Gibson", isbn: "978-0441569595", totalCopies: 1 },
-    { title: "The Martian", author: "Andy Weir", isbn: "978-0553418026", totalCopies: 4 },
-    { title: "System Design Interview", author: "Alex Xu", isbn: "978-1736049112", totalCopies: 6 },
-    { title: "1984", author: "George Orwell", isbn: "978-0451524935", totalCopies: 3 },
-    { title: "To Kill a Mockingbird", author: "Harper Lee", isbn: "978-0060935467", totalCopies: 4 }
-  ]
+  // Insert dummy books
+  const books = await prisma.book.createMany({
+    data: [
+      { title: 'The Pragmatic Programmer', author: 'Andrew Hunt', isbn: '978-0135957059', totalCopies: 5, available: 5 },
+      { title: 'Clean Code', author: 'Robert C. Martin', isbn: '978-0132350884', totalCopies: 3, available: 3 },
+      { title: 'Design Patterns', author: 'Erich Gamma', isbn: '978-0201633610', totalCopies: 4, available: 4 },
+      { title: 'Introduction to Algorithms', author: 'Thomas H. Cormen', isbn: '978-0262033848', totalCopies: 2, available: 2 },
+      { title: 'You Don\'t Know JS', author: 'Kyle Simpson', isbn: '978-1491904244', totalCopies: 6, available: 6 },
+      { title: 'System Design Interview', author: 'Alex Xu', isbn: '978-1736049112', totalCopies: 8, available: 8 },
+      { title: 'The Rust Programming Language', author: 'Steve Klabnik', isbn: '978-1593278281', totalCopies: 3, available: 3 },
+      { title: 'Grokking Algorithms', author: 'Aditya Bhargava', isbn: '978-1617292231', totalCopies: 5, available: 5 }
+    ],
+    skipDuplicates: true, // Prevents errors if you run the seed command twice
+  })
 
-  for (const book of mockBooks) {
-    // We use upsert so you can run this script multiple times safely 
-    // without throwing "Unique constraint failed" errors on the ISBN.
-    await prisma.book.upsert({
-      where: { isbn: book.isbn },
-      update: {}, 
-      create: {
-        title: book.title,
-        author: book.author,
-        isbn: book.isbn,
-        totalCopies: book.totalCopies,
-        available: book.totalCopies, // Freshly seeded books are fully available
-      },
-    })
-  }
-
-  console.log('Database seeded successfully! 🌱')
+  console.log(`✅ Successfully added ${books.count} books to the catalog.`)
 }
 
 main()
   .catch((e) => {
-    console.error(e)
+    console.error('❌ Seeding failed:', e)
     process.exit(1)
   })
   .finally(async () => {

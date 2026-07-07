@@ -1,15 +1,9 @@
 // lib/prisma.ts
 import { PrismaClient } from '@prisma/client'
-import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3'
 
 const prismaClientSingleton = () => {
-  // 1. Initialize the SQLite adapter with your connection string
-  const adapter = new PrismaBetterSqlite3({
-    url: process.env.DATABASE_URL || "file:./dev.db"
-  })
-
-  // 2. Pass the adapter into the Prisma Client
-  return new PrismaClient({ adapter })
+  // No adapters needed anymore, just a clean PrismaClient connecting to your DATABASE_URL
+  return new PrismaClient()
 }
 
 declare global {

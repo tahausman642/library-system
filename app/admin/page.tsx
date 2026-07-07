@@ -6,7 +6,7 @@ import { redirect } from 'next/navigation'
 
 export default async function AdminDashboard() {
   const user = await currentUser()
-  
+
   // REPLACE THIS WITH YOUR REAL CLERK EMAIL
   const ADMIN_EMAIL = 'tahausman642@gmail.com'
 
@@ -28,7 +28,7 @@ export default async function AdminDashboard() {
     where: { returnDate: null },
     include: {
       book: true,
-      user: true, 
+      user: true,
     },
     orderBy: { dueDate: 'asc' }
   })
@@ -82,7 +82,7 @@ export default async function AdminDashboard() {
         <div className="lg:col-span-2">
           <section className="bg-white border rounded-xl p-6 shadow-sm">
             <h2 className="text-xl font-semibold mb-4">Active System Ledger</h2>
-            
+
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
@@ -115,6 +115,29 @@ export default async function AdminDashboard() {
                 <p className="text-center text-gray-500 py-8">No active loans in the system.</p>
               )}
             </div>
+          </section>
+          <section className="bg-white border rounded-xl p-6 shadow-sm mt-8">
+            <h2 className="text-xl font-semibold mb-4">Manage Inventory</h2>
+            <table className="w-full text-left">
+              <thead>
+                <tr className="border-b text-sm text-gray-500">
+                  <th className="pb-3">Title</th>
+                  <th className="pb-3">Copies</th>
+                  <th className="pb-3">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {inventory.map((book) => (
+                  <tr key={book.id} className="border-b last:border-0">
+                    <td className="py-3">{book.title}</td>
+                    <td className="py-3">{book.available} / {book.totalCopies}</td>
+                    <td className="py-3">
+                      <a href={`/admin/edit/${book.id}`} className="text-blue-600 hover:underline mr-4">Edit</a>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </section>
         </div>
       </div>

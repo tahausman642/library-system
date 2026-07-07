@@ -4,48 +4,67 @@ import { SignInButton, UserButton } from '@clerk/nextjs'
 import { auth } from '@clerk/nextjs/server'
 import BorrowButton from '@/components/BorrowButton'
 import ReturnButton from '@/components/ReturnButton'
+import Link from 'next/link'
 
 interface PageProps {
-  searchParams: Promise<{ query?: string; availableOnly?: string }>
+  searchParams: Promise<{ query?: string; availableOnly?: string; page?: string }>
 }
 
 export default async function Home({ searchParams }: PageProps) {
-  // 1. Await search parameters sent from the client URL
+  // 1. Await and parse all URL parameters
   const params = await searchParams
   const query = params.query || ''
   const availableOnly = params.availableOnly === 'true'
+  const currentPage = Number(params.page) || 1
+  const ITEMS_PER_PAGE = 6 // Showing 6 books fits perfectly in a 3-column grid
 
-  // 2. Fetch the user's auth state securely on the server
+  // 2. Fetch auth state
   const { userId } = await auth()
 
-  // 3. Dynamically construct the Prisma query based on search/filters
-  const books = await prisma.book.findMany({
-    where: {
-      AND: [
-        {
-          OR: [
-            { title: { contains: query } },
-            { author: { contains: query } },
-          ],
-        },
-        availableOnly ? { available: { gte: 1 } } : {},
-      ],
-    },
-    orderBy: { title: 'asc' },
-  })
+  // 3. Define the query filter (reusable for both findMany and count)
+  // Note: mode: 'insensitive' is critical for PostgreSQL searches!
+  const whereClause = {
+    AND: [
+      {
+        OR: [
+          { title: { contains: query, mode: 'insensitive' as const } },
+          { author: { contains: query, mode: 'insensitive' as const } },
+        ],
+      },
+      availableOnly ? { available: { gte: 1 } } : {},
+    ],
+  }
 
-  // 4. Fetch the user's active loans so we know which books they already hold
+  // 4. Fetch data and total count simultaneously
+  const [books, totalBooks] = await Promise.all([
+    prisma.book.findMany({
+      where: whereClause,
+      skip: (currentPage - 1) * ITEMS_PER_PAGE,
+      take: ITEMS_PER_PAGE,
+      orderBy: { title: 'asc' },
+    }),
+    prisma.book.count({
+      where: whereClause,
+    })
+  ])
+
+  const totalPages = Math.ceil(totalBooks / ITEMS_PER_PAGE)
+
+  // Helper function to generate pagination URLs that preserve filters
+  const getPageUrl = (page: number) => {
+    const urlParams = new URLSearchParams()
+    if (query) urlParams.set('query', query)
+    if (availableOnly) urlParams.set('availableOnly', 'true')
+    urlParams.set('page', page.toString())
+    return `/?${urlParams.toString()}`
+  }
+
+  // 5. Fetch user loans
   let activeLoans: { id: string; bookId: string }[] = []
   if (userId) {
     activeLoans = await prisma.borrowRecord.findMany({
-      where: {
-        userId: userId,
-        returnDate: null, // Only fetch books they haven't returned yet
-      },
-      select: {
-        id: true,
-        bookId: true,
-      }
+      where: { userId: userId, returnDate: null },
+      select: { id: true, bookId: true }
     })
   }
 
@@ -95,19 +114,13 @@ export default async function Home({ searchParams }: PageProps) {
             Available Only
           </label>
 
-          <button
-            type="submit"
-            className="bg-black text-white px-5 py-2 rounded-md font-medium text-sm hover:bg-gray-800 transition"
-          >
+          <button type="submit" className="bg-black text-white px-5 py-2 rounded-md font-medium text-sm hover:bg-gray-800 transition">
             Filter
           </button>
         </form>
 
         {(query || availableOnly) && (
-          <a
-            href="/"
-            className="text-xs font-semibold text-gray-500 hover:text-black underline shrink-0"
-          >
+          <a href="/" className="text-xs font-semibold text-gray-500 hover:text-black underline shrink-0">
             Clear Filters
           </a>
         )}
@@ -116,21 +129,19 @@ export default async function Home({ searchParams }: PageProps) {
       {/* Book Catalog Grid */}
       <main>
         <h2 className="text-2xl font-semibold mb-6">Browse Collection</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
           {books.map((book) => {
-            // Check if the current user is holding this specific book
             const userActiveLoan = activeLoans.find((loan) => loan.bookId === book.id)
 
             return (
               <div key={book.id} className="border rounded-lg p-5 shadow-sm hover:shadow-md transition bg-white flex flex-col justify-between">
-
                 <div className="mb-4">
                   <a href={`/book/${book.id}`} className="hover:underline hover:text-blue-600 transition">
                     <h3 className="text-xl font-bold mb-1 line-clamp-1">{book.title}</h3>
                   </a>
                   <p className="text-gray-600 mb-2">by {book.author}</p>
-                  <span className={`text-xs px-2 py-1 rounded-full font-medium ${book.available > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                    }`}>
+                  <span className={`text-xs px-2 py-1 rounded-full font-medium ${book.available > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
                     {book.available} / {book.totalCopies} Available
                   </span>
                 </div>
@@ -140,22 +151,18 @@ export default async function Home({ searchParams }: PageProps) {
                   {!userId ? (
                     <p className="text-sm text-gray-500 italic">Sign in to borrow</p>
                   ) : userActiveLoan ? (
-                    // If they have it, let them return it directly from the catalog
                     <div className="flex flex-col gap-2">
                       <p className="text-xs text-blue-600 font-semibold text-center mb-1">Currently Borrowed</p>
                       <ReturnButton recordId={userActiveLoan.id} />
                     </div>
                   ) : book.available > 0 ? (
-                    // If they don't have it and it's available, let them borrow it
                     <BorrowButton bookId={book.id} />
                   ) : (
-                    // Out of stock fallback
                     <button disabled className="w-full bg-gray-200 text-gray-500 py-2 rounded-md font-medium cursor-not-allowed">
                       Out of Stock
                     </button>
                   )}
                 </div>
-
               </div>
             )
           })}
@@ -166,6 +173,29 @@ export default async function Home({ searchParams }: PageProps) {
             </div>
           )}
         </div>
+
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <div className="flex justify-center items-center gap-4 border-t pt-8">
+            <Link 
+              href={getPageUrl(currentPage - 1)}
+              className={`px-4 py-2 border rounded-md text-sm font-medium ${currentPage <= 1 ? 'pointer-events-none opacity-50 bg-gray-50 text-gray-400' : 'hover:bg-gray-100 text-black'}`}
+            >
+              ← Previous
+            </Link>
+            
+            <span className="text-sm font-medium text-gray-600">
+              Page {currentPage} of {totalPages}
+            </span>
+            
+            <Link 
+              href={getPageUrl(currentPage + 1)}
+              className={`px-4 py-2 border rounded-md text-sm font-medium ${currentPage >= totalPages ? 'pointer-events-none opacity-50 bg-gray-50 text-gray-400' : 'hover:bg-gray-100 text-black'}`}
+            >
+              Next →
+            </Link>
+          </div>
+        )}
       </main>
     </div>
   )
