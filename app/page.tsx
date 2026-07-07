@@ -5,6 +5,7 @@ import { auth } from '@clerk/nextjs/server'
 import BorrowButton from '@/components/BorrowButton'
 import ReturnButton from '@/components/ReturnButton'
 import Link from 'next/link'
+import ThemeToggle from '@/components/ThemeToggle';
 
 interface PageProps {
   searchParams: Promise<{ query?: string; availableOnly?: string; page?: string }>
@@ -21,8 +22,7 @@ export default async function Home({ searchParams }: PageProps) {
   // 2. Fetch auth state
   const { userId } = await auth()
 
-  // 3. Define the query filter (reusable for both findMany and count)
-  // Note: mode: 'insensitive' is critical for PostgreSQL searches!
+  // 3. Define the query filter
   const whereClause = {
     AND: [
       {
@@ -71,19 +71,23 @@ export default async function Home({ searchParams }: PageProps) {
   return (
     <div className="max-w-5xl mx-auto p-8 font-sans">
       {/* Navigation & Auth Header */}
-      <header className="flex justify-between items-center mb-12 border-b pb-4">
-        <h1 className="text-3xl font-extrabold tracking-tight">Library Portal</h1>
-        <nav>
+      <header className="flex justify-between items-center mb-12 border-b dark:border-gray-800 pb-4">
+        <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white">Library Portal</h1>
+        
+        {/* Added ThemeToggle right inside the nav, always visible */}
+        <nav className="flex items-center gap-4">
+          <ThemeToggle />
+          
           {!userId ? (
             <div className="bg-blue-600 text-white px-4 py-2 rounded font-medium hover:bg-blue-700 transition">
               <SignInButton mode="modal" />
             </div>
           ) : (
             <div className="flex items-center gap-4">
-              <a href="/dashboard" className="text-sm font-medium text-gray-600 hover:text-black">
+              <a href="/dashboard" className="text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white">
                 My Dashboard
               </a>
-              <a href="/admin" className="text-sm font-medium text-gray-600 hover:text-black">
+              <a href="/admin" className="text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white">
                 Admin Panel
               </a>
               <UserButton />
@@ -93,34 +97,34 @@ export default async function Home({ searchParams }: PageProps) {
       </header>
 
       {/* Search and Filter Control Bar */}
-      <div className="mb-8 bg-gray-50 p-4 rounded-xl border flex flex-col md:flex-row gap-4 items-center justify-between">
+      <div className="mb-8 bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border dark:border-gray-800 flex flex-col md:flex-row gap-4 items-center justify-between transition-colors">
         <form method="GET" action="/" className="flex flex-col sm:flex-row gap-3 w-full md:w-auto flex-1">
           <input
             type="text"
             name="query"
             defaultValue={query}
             placeholder="Search by title or author..."
-            className="flex-1 px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-black text-sm bg-white"
+            className="flex-1 px-4 py-2 border dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-gray-500 text-sm bg-white dark:bg-gray-900 dark:text-white transition-colors"
           />
 
-          <label className="flex items-center gap-2 cursor-pointer text-sm font-medium select-none">
+          <label className="flex items-center gap-2 cursor-pointer text-sm font-medium select-none dark:text-gray-200">
             <input
               type="checkbox"
               name="availableOnly"
               value="true"
               defaultChecked={availableOnly}
-              className="rounded border-gray-300 text-black focus:ring-black h-4 w-4"
+              className="rounded border-gray-300 dark:border-gray-600 text-black focus:ring-black h-4 w-4"
             />
             Available Only
           </label>
 
-          <button type="submit" className="bg-black text-white px-5 py-2 rounded-md font-medium text-sm hover:bg-gray-800 transition">
+          <button type="submit" className="bg-black dark:bg-white text-white dark:text-black px-5 py-2 rounded-md font-medium text-sm hover:bg-gray-800 dark:hover:bg-gray-200 transition">
             Filter
           </button>
         </form>
 
         {(query || availableOnly) && (
-          <a href="/" className="text-xs font-semibold text-gray-500 hover:text-black underline shrink-0">
+          <a href="/" className="text-xs font-semibold text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white underline shrink-0">
             Clear Filters
           </a>
         )}
@@ -128,37 +132,37 @@ export default async function Home({ searchParams }: PageProps) {
 
       {/* Book Catalog Grid */}
       <main>
-        <h2 className="text-2xl font-semibold mb-6">Browse Collection</h2>
+        <h2 className="text-2xl font-semibold mb-6 text-gray-900 dark:text-white">Browse Collection</h2>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
           {books.map((book) => {
             const userActiveLoan = activeLoans.find((loan) => loan.bookId === book.id)
 
             return (
-              <div key={book.id} className="border rounded-lg p-5 shadow-sm hover:shadow-md transition bg-white flex flex-col justify-between">
+              <div key={book.id} className="border dark:border-gray-800 rounded-lg p-5 shadow-sm hover:shadow-md transition bg-white dark:bg-gray-900 flex flex-col justify-between">
                 <div className="mb-4">
-                  <a href={`/book/${book.id}`} className="hover:underline hover:text-blue-600 transition">
-                    <h3 className="text-xl font-bold mb-1 line-clamp-1">{book.title}</h3>
+                  <a href={`/book/${book.id}`} className="hover:underline hover:text-blue-600 dark:hover:text-blue-400 transition">
+                    <h3 className="text-xl font-bold mb-1 line-clamp-1 text-gray-900 dark:text-white">{book.title}</h3>
                   </a>
-                  <p className="text-gray-600 mb-2">by {book.author}</p>
-                  <span className={`text-xs px-2 py-1 rounded-full font-medium ${book.available > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                  <p className="text-gray-600 dark:text-gray-400 mb-2">by {book.author}</p>
+                  <span className={`text-xs px-2 py-1 rounded-full font-medium ${book.available > 0 ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'}`}>
                     {book.available} / {book.totalCopies} Available
                   </span>
                 </div>
 
                 {/* Dynamic Call to Action */}
-                <div className="mt-auto pt-4 border-t">
+                <div className="mt-auto pt-4 border-t dark:border-gray-800">
                   {!userId ? (
-                    <p className="text-sm text-gray-500 italic">Sign in to borrow</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 italic">Sign in to borrow</p>
                   ) : userActiveLoan ? (
                     <div className="flex flex-col gap-2">
-                      <p className="text-xs text-blue-600 font-semibold text-center mb-1">Currently Borrowed</p>
+                      <p className="text-xs text-blue-600 dark:text-blue-400 font-semibold text-center mb-1">Currently Borrowed</p>
                       <ReturnButton recordId={userActiveLoan.id} />
                     </div>
                   ) : book.available > 0 ? (
                     <BorrowButton bookId={book.id} />
                   ) : (
-                    <button disabled className="w-full bg-gray-200 text-gray-500 py-2 rounded-md font-medium cursor-not-allowed">
+                    <button disabled className="w-full bg-gray-200 dark:bg-gray-800 text-gray-500 dark:text-gray-400 py-2 rounded-md font-medium cursor-not-allowed transition-colors">
                       Out of Stock
                     </button>
                   )}
@@ -168,29 +172,29 @@ export default async function Home({ searchParams }: PageProps) {
           })}
 
           {books.length === 0 && (
-            <div className="col-span-full text-center py-12 bg-gray-50 rounded-lg border border-dashed">
-              <p className="text-gray-500">No books found matching your current filter criteria.</p>
+            <div className="col-span-full text-center py-12 bg-gray-50 dark:bg-gray-800/30 rounded-lg border border-dashed dark:border-gray-700">
+              <p className="text-gray-500 dark:text-gray-400">No books found matching your current filter criteria.</p>
             </div>
           )}
         </div>
 
         {/* Pagination Controls */}
         {totalPages > 1 && (
-          <div className="flex justify-center items-center gap-4 border-t pt-8">
+          <div className="flex justify-center items-center gap-4 border-t dark:border-gray-800 pt-8">
             <Link 
               href={getPageUrl(currentPage - 1)}
-              className={`px-4 py-2 border rounded-md text-sm font-medium ${currentPage <= 1 ? 'pointer-events-none opacity-50 bg-gray-50 text-gray-400' : 'hover:bg-gray-100 text-black'}`}
+              className={`px-4 py-2 border dark:border-gray-700 rounded-md text-sm font-medium transition-colors ${currentPage <= 1 ? 'pointer-events-none opacity-50 bg-gray-50 dark:bg-gray-800 text-gray-400' : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-black dark:text-white'}`}
             >
               ← Previous
             </Link>
             
-            <span className="text-sm font-medium text-gray-600">
+            <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
               Page {currentPage} of {totalPages}
             </span>
             
             <Link 
               href={getPageUrl(currentPage + 1)}
-              className={`px-4 py-2 border rounded-md text-sm font-medium ${currentPage >= totalPages ? 'pointer-events-none opacity-50 bg-gray-50 text-gray-400' : 'hover:bg-gray-100 text-black'}`}
+              className={`px-4 py-2 border dark:border-gray-700 rounded-md text-sm font-medium transition-colors ${currentPage >= totalPages ? 'pointer-events-none opacity-50 bg-gray-50 dark:bg-gray-800 text-gray-400' : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-black dark:text-white'}`}
             >
               Next →
             </Link>
