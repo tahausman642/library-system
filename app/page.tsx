@@ -73,23 +73,23 @@ export default async function Home({ searchParams }: PageProps) {
       {/* Navigation & Auth Header */}
       <header className="flex justify-between items-center mb-12 border-b dark:border-gray-800 pb-4">
         <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white">Library Portal</h1>
-        
+
         {/* Added ThemeToggle right inside the nav, always visible */}
         <nav className="flex items-center gap-4">
           <ThemeToggle />
-          
+
           {!userId ? (
             <div className="bg-blue-600 text-white px-4 py-2 rounded font-medium hover:bg-blue-700 transition">
               <SignInButton mode="modal" />
             </div>
           ) : (
             <div className="flex items-center gap-4">
-              <a href="/dashboard" className="text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white">
+              <Link href="/dashboard" className="text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white">
                 My Dashboard
-              </a>
-              <a href="/admin" className="text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white">
+              </Link>
+              <Link href="/admin" className="text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white">
                 Admin Panel
-              </a>
+              </Link>
               <UserButton />
             </div>
           )}
@@ -133,7 +133,7 @@ export default async function Home({ searchParams }: PageProps) {
       {/* Book Catalog Grid */}
       <main>
         <h2 className="text-2xl font-semibold mb-6 text-gray-900 dark:text-white">Browse Collection</h2>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
           {books.map((book) => {
             const userActiveLoan = activeLoans.find((loan) => loan.bookId === book.id)
@@ -181,18 +181,18 @@ export default async function Home({ searchParams }: PageProps) {
         {/* Pagination Controls */}
         {totalPages > 1 && (
           <div className="flex justify-center items-center gap-4 border-t dark:border-gray-800 pt-8">
-            <Link 
+            <Link
               href={getPageUrl(currentPage - 1)}
               className={`px-4 py-2 border dark:border-gray-700 rounded-md text-sm font-medium transition-colors ${currentPage <= 1 ? 'pointer-events-none opacity-50 bg-gray-50 dark:bg-gray-800 text-gray-400' : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-black dark:text-white'}`}
             >
               ← Previous
             </Link>
-            
+
             <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
               Page {currentPage} of {totalPages}
             </span>
-            
-            <Link 
+
+            <Link
               href={getPageUrl(currentPage + 1)}
               className={`px-4 py-2 border dark:border-gray-700 rounded-md text-sm font-medium transition-colors ${currentPage >= totalPages ? 'pointer-events-none opacity-50 bg-gray-50 dark:bg-gray-800 text-gray-400' : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-black dark:text-white'}`}
             >
